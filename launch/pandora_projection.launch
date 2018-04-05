@@ -1,0 +1,5 @@
+<launch>
+	<node pkg="pandora_projection" name="pandora_projection" type="pandora_projection_node" output="screen" >
+		<rosparam command="load"/>
+	</node>
+</launch>
