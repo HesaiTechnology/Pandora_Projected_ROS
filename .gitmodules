@@ -1,0 +1,3 @@
+[submodule "src/Pandora_Apollo"]
+	path = src/Pandora_Apollo
+	url = https://github.com/HesaiTechnology/Pandora_Apollo.git
