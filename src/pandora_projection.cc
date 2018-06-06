@@ -280,6 +280,13 @@ class Projection {
     thinkness = 1;
     got_calibration_ = 0;
 
+    bool ret = ParseParameter(private_nh, &render_mode_);
+
+    if (!ret) {
+        ROS_INFO("Parse parameters failed, please check parameters above.");
+        return;
+    }
+
     compute_color_map(clr_mode, clr_vec);
 
     // init distortion as 0.0
@@ -307,6 +314,8 @@ class Projection {
  private:
   void TryToProjection();
   void ProjectionTask();
+  bool ParseParameter(ros::NodeHandle nh, int* render_mode);
+  bool checkRenderMode(int render_mode);
 
   pthread_mutex_t cld_lock_;
   pthread_mutex_t pic_lock_;
@@ -370,6 +379,25 @@ void Projection::ProjectionTask() {
     sensor_msgs::ImagePtr msg = cv_ptr.toImageMsg();
     pandora_cameras_output[proj_data.camera.picid].publish(msg);
   }
+}
+
+bool Projection::ParseParameter(ros::NodeHandle nh, int *render_mode)
+{
+  if (nh.hasParam("render_mode")) {
+    nh.getParam("render_mode", *render_mode);
+  }
+
+  std::cout << "Configs: render mode: " << *render_mode << std::endl;
+
+  return checkRenderMode(*render_mode);
+}
+
+bool Projection::checkRenderMode(int render_mode)
+{
+  if (render_mode < 0 || render_mode > 3)
+    return false;
+  else
+    return true;
 }
 
 void Projection::TryToProjection() {

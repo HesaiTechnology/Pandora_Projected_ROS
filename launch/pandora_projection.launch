@@ -1,5 +1,8 @@
 <launch>
-	<node pkg="pandora_projection" name="pandora_projection" type="pandora_projection_node" output="screen" >
-		<rosparam command="load"/>
-	</node>
+    <arg name="render_mode" default="0"/>
+
+    <node pkg="pandora_projection" name="pandora_projection" type="pandora_projection_node" output="screen" >
+        <param name="render_mode" type="int" value="$(arg render_mode)"/>
+        <rosparam command="load"/>
+    </node>
 </launch>
