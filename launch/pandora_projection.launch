@@ -1,7 +1,17 @@
 <launch>
+    <arg name="pandora_ip" default="192.168.20.51"/>
+    <arg name="lidar_port"  default="2368"/>
+    <arg name="gps_port"  default="10110"/>
+    <arg name="camera_port"  default="9870"/>
+    <arg name="start_angle"  default="135"/>
     <arg name="render_mode" default="0"/>
 
     <node pkg="pandora_projection" name="pandora_projection" type="pandora_projection_node" output="screen" >
+        <param name="pandora_ip" type="string" value="$(arg pandora_ip)"/>
+        <param name="lidar_port" type="int" value="$(arg lidar_port)"/>
+        <param name="gps_port" type="int" value="$(arg gps_port)"/>
+        <param name="camera_port" type="int" value="$(arg camera_port)"/>
+        <param name="start_angle" type="double" value="$(arg start_angle)"/>
         <param name="render_mode" type="int" value="$(arg render_mode)"/>
         <rosparam command="load"/>
     </node>
