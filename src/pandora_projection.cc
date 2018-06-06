@@ -20,6 +20,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <time.h>
+#include <arpa/inet.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/point_cloud.h>
@@ -280,6 +281,19 @@ class Projection {
     thinkness = 1;
     got_calibration_ = 0;
 
+    int lidar_port = 2368;
+    int gps_port = 10110;
+    int camera_port = 9870;
+    double start_angle = 135.0f;
+
+    bool ret = ParseParameter(private_nh, &ip_, &lidar_port, &gps_port, \
+        &camera_port, &start_angle, &render_mode_);
+
+    if (!ret) {
+        ROS_INFO("Parse parameters failed, please check parameters above.");
+        return;
+    }
+
     compute_color_map(clr_mode, clr_vec);
 
     // init distortion as 0.0
@@ -292,9 +306,9 @@ class Projection {
     proj_thr_ =
         new boost::thread(boost::bind(&Projection::ProjectionTask, this));
 
-    pandora = new Pandora(
-        ip_, 2368, 10110, boost::bind(&Projection::LidarCallBack, this, _1, _2),
-        NULL, 13500, 9870,
+    pandora = new Pandora(ip_, lidar_port, gps_port,
+        boost::bind(&Projection::LidarCallBack, this, _1, _2),
+        NULL, start_angle * 100.0f, camera_port,
         boost::bind(&Projection::CameraCallBack, this, _1, _2, _3, _4), 1, 0,
         std::string("hesai40"));
     pandora->Start();
@@ -307,6 +321,11 @@ class Projection {
  private:
   void TryToProjection();
   void ProjectionTask();
+  bool ParseParameter(ros::NodeHandle nh, std::string *pandora_ip, \
+      int *lidar_port, int *gps_port, int *camera_port, \
+      double *start_angle, int *render_mode);
+  bool checkPort(int port);
+  bool checkRenderMode(int render_mode);
 
   pthread_mutex_t cld_lock_;
   pthread_mutex_t pic_lock_;
@@ -369,6 +388,62 @@ void Projection::ProjectionTask() {
     
     sensor_msgs::ImagePtr msg = cv_ptr.toImageMsg();
     pandora_cameras_output[proj_data.camera.picid].publish(msg);
+  }
+}
+
+bool Projection::ParseParameter(ros::NodeHandle nh, \
+    std::string *pandora_ip, int *lidar_port, int *gps_port, \
+    int *camera_port, double *start_angle, int *render_mode)
+{
+  if (nh.hasParam("pandora_ip")) {
+    nh.getParam("pandora_ip", *pandora_ip);
+  }
+  if (nh.hasParam("lidar_port")) {
+    nh.getParam("lidar_port", *lidar_port);
+  }
+  if (nh.hasParam("gps_port")) {
+    nh.getParam("gps_port", *gps_port);
+  }
+  if (nh.hasParam("camera_port")) {
+    nh.getParam("camera_port", *camera_port);
+  }
+  if (nh.hasParam("start_angle")) {
+    nh.getParam("start_angle", *start_angle);
+  }
+  if (nh.hasParam("render_mode")) {
+    nh.getParam("render_mode", *render_mode);
+  }
+
+  std::cout << "Configs: pandora_ip: " << *pandora_ip << \
+      ", lidar_port: " << *lidar_port << ", gps_port: " << *lidar_port << \
+      ", camera_port: " << *camera_port << ", start_angle: " << \
+      *start_angle << ", render_mode: " << *render_mode << std::endl;
+
+  struct sockaddr_in sa;
+
+  return checkPort(*lidar_port) && checkPort(*gps_port) && \
+      checkPort(*camera_port) && checkRenderMode(*render_mode) && \
+      (*start_angle < 360) && (*start_angle >= 0) && \
+      (1 == inet_pton(AF_INET, pandora_ip->c_str(), &(sa.sin_addr)));
+}
+
+bool Projection::checkRenderMode(int render_mode)
+{
+  if (render_mode < 0 || render_mode > 3)
+    return false;
+  else
+    return true;
+}
+
+bool Projection::checkPort(int port)
+{
+  if (port <= 0 || port >= 65535)
+  {
+    return false;
+  }
+  else
+  {
+    return true;
   }
 }
 
